@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os
 import pygame
 import socket
@@ -14,7 +13,7 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 WIDTH, HEIGHT = 20, 20
 CELL_SIZE = 30
 SCREEN_WIDTH = WIDTH * CELL_SIZE
-SCREEN_HEIGHT = HEIGHT * CELL_SIZE + 150  # Mais espaço para a UI
+SCREEN_HEIGHT = HEIGHT * CELL_SIZE + 150  
 SERVER_HOST = '127.0.0.1'
 SERVER_PORT = 8080
 
@@ -28,7 +27,7 @@ BLUE = (0, 0, 255)
 GRAY = (100, 100, 100)
 BUTTON_COLOR = (50, 50, 50)
 BUTTON_HOVER = (70, 70, 70)
-SCORE_COLOR = (255, 215, 0)  # Dourado para a pontuação
+SCORE_COLOR = (255, 215, 0)  
 
 class Button:
     def __init__(self, x, y, w, h, text, action=None):
@@ -71,10 +70,8 @@ class SnakeClient:
         self.last_direction = None
         self.direction_changed = False
         
-        # Estado do jogo
         self.reset_game_state()
         
-        # Botões
         self.create_buttons()
         
         # Thread de comunicação
@@ -132,7 +129,7 @@ class SnakeClient:
 
     def send_command(self, cmd):
         try:
-            # Envia direção continuamente se estiver no jogo
+
             if cmd in ['U', 'D', 'L', 'R'] and self.game_state['state'] == '1':
                 if not self.direction_changed:
                     self.sock.sendall(cmd.encode())
@@ -207,7 +204,7 @@ class SnakeClient:
     def draw_game(self):
         self.screen.fill(BLACK)
         
-        # Grade
+        # grade
         for x in range(0, SCREEN_WIDTH, CELL_SIZE):
             pygame.draw.line(self.screen, GRAY, (x, 0), (x, HEIGHT*CELL_SIZE))
         for y in range(0, HEIGHT*CELL_SIZE, CELL_SIZE):
@@ -235,17 +232,17 @@ class SnakeClient:
     def draw_game_over(self):
         self.screen.fill(BLACK)
         
-        # Título
+        # título
         game_over = self.big_font.render("FIM DE JOGO", True, RED)
         game_over_rect = game_over.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//4))
         self.screen.blit(game_over, game_over_rect)
         
-        # Pontuação Final (grande e centralizada)
+        # pontuação Final 
         score_text = self.score_font.render(f"Pontuação Final: {self.game_state['score']}", True, SCORE_COLOR)
         score_rect = score_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 - 40))
         self.screen.blit(score_text, score_rect)
         
-        # Botões (posicionados mais abaixo)
+        # Botões 
         mouse_pos = pygame.mouse.get_pos()
         self.start_button.check_hover(mouse_pos)
         self.start_button.draw(self.screen)
@@ -299,7 +296,6 @@ class SnakeClient:
             if not self.handle_events():
                 self.running = False
             
-            # Renderização baseada no estado
             if self.game_state['state'] == '0':
                 self.draw_menu()
             elif self.game_state['state'] == '1':
