@@ -1,4 +1,3 @@
-// snake_backend.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,7 +47,6 @@ typedef struct {
     int score;
 } Highscore;
 
-// Forward declarations
 void place_food(SnakeGame *game);
 void update_highscores(SnakeGame *game);
 void init_game(SnakeGame *game);
@@ -113,7 +111,7 @@ void init_game(SnakeGame *game) {
     srand(time(NULL));
     place_food(game);
     
-    // Initialize highscores
+    // initializa highscores
     for (int i = 0; i < 10; i++) {
         highscores[i].score = 0;
         strcpy(highscores[i].name, "Player");
@@ -123,12 +121,11 @@ void init_game(SnakeGame *game) {
 void update_game(SnakeGame *game) {
     if (game->state != STATE_PLAYING) return;
     
-    // Move snake body
+    // movimentos da cobra
     for (int i = game->length - 1; i > 0; i--) {
         game->body[i] = game->body[i-1];
     }
     
-    // Move head based on direction
     switch (game->direction) {
         case DIR_UP:    game->body[0].y--; break;
         case DIR_RIGHT: game->body[0].x++; break;
@@ -136,7 +133,7 @@ void update_game(SnakeGame *game) {
         case DIR_LEFT: game->body[0].x--; break;
     }
     
-    // Check wall collision
+    // Se bater na parede (verificação)
     if (game->body[0].x < 0 || game->body[0].x >= WIDTH || 
         game->body[0].y < 0 || game->body[0].y >= HEIGHT) {
         game->state = STATE_GAME_OVER;
@@ -144,7 +141,7 @@ void update_game(SnakeGame *game) {
         return;
     }
     
-    // Check self collision
+    // Autocolisão da cobra
     for (int i = 1; i < game->length; i++) {
         if (game->body[0].x == game->body[i].x && game->body[0].y == game->body[i].y) {
             game->state = STATE_GAME_OVER;
@@ -153,15 +150,16 @@ void update_game(SnakeGame *game) {
         }
     }
     
-    // Check food collision
+    // Se colidir com um alimento aumenta de tamanho, score e de nivel consequentemente
     if (game->body[0].x == game->food.x && game->body[0].y == game->food.y) {
         game->length++;
         game->score += 10 * game->level;
         
-        // Increase difficulty every 5 foods
+        // Aumenta a dificuldade a cada 5 alimentos
         if (game->score % (50 * game->level) == 0) {
             game->level++;
-            game->speed = game->speed * 0.8; // Increase speed by 20%
+            game->speed = game->speed * 0.8; // Aumenta a velocidade em 20%
+
         }
         
         place_food(game);
@@ -186,31 +184,36 @@ void change_direction(SnakeGame *game, Direction new_dir) {
 void serialize_game(SnakeGame *game, char *buffer) {
     int offset = 0;
     
-    // Game state (1 byte)
+    // Estado do jogo (1 byte)
     buffer[offset++] = '0' + game->state;
     
-    // Game data based on state
+    // Dados do jogo baseados no estado
     if (game->state == STATE_PLAYING || game->state == STATE_GAME_OVER) {
-        // Snake length (4 bytes)
+        
+        
+    // Comprimento da cobra (4 bytes)
         sprintf(buffer + offset, "%04d", game->length);
         offset += 4;
         
-        // Snake body (x,y pairs)
+    // Corpo de cobra (pares x,y)
+        
         for (int i = 0; i < game->length; i++) {
             sprintf(buffer + offset, "%02d%02d", game->body[i].x, game->body[i].y);
             offset += 4;
         }
         
-        // Food position (4 bytes)
+   // Posição do alimento (4 bytes)
+        
         sprintf(buffer + offset, "%02d%02d", game->food.x, game->food.y);
         offset += 4;
         
-        // Score and level (8 bytes)
+   // Pontuação e nível (8 bytes)
+   
         sprintf(buffer + offset, "%04d%02d", game->score, game->level);
         offset += 6;
     }
     else if (game->state == STATE_HIGHSCORES) {
-        // Highscores
+
         for (int i = 0; i < 10; i++) {
             sprintf(buffer + offset, "%04d%-50s", highscores[i].score, highscores[i].name);
             offset += 54;
@@ -228,17 +231,17 @@ void handle_client(int client_socket, SnakeGame *game) {
         int valread = read(client_socket, buffer, sizeof(buffer));
         
         if (valread > 0) {
-            // Process command
+
             switch (buffer[0]) {
                 case 'U': change_direction(game, DIR_UP); break;
                 case 'R': change_direction(game, DIR_RIGHT); break;
                 case 'D': change_direction(game, DIR_DOWN); break;
                 case 'L': change_direction(game, DIR_LEFT); break;
-                case 'S': game->state = STATE_PLAYING; break; // Start game
-                case 'N': reset_game(game); break; // New game
-                case 'H': game->state = STATE_HIGHSCORES; break; // Show highscores
-                case 'M': game->state = STATE_MENU; break; // Return to menu
-                case 'Q': close(client_socket); return; // Quit
+                case 'S': game->state = STATE_PLAYING; break; 
+                case 'N': reset_game(game); break;
+                case 'H': game->state = STATE_HIGHSCORES; break; 
+                case 'M': game->state = STATE_MENU; break;
+                case 'Q': close(client_socket); return;
 
                     if (buffer[1] == '1') game->speed = 150000;
                     else if (buffer[1] == '2') game->speed = 100000;
@@ -246,15 +249,12 @@ void handle_client(int client_socket, SnakeGame *game) {
                     break;
             }
             
-            // Update game if playing
             if (game->state == STATE_PLAYING) {
                 update_game(game);
             }
             
-            // Serialize game state
             serialize_game(game, response);
             
-            // Send game state to client
             send(client_socket, response, strlen(response), 0);
         }
         
@@ -271,13 +271,13 @@ int main() {
     SnakeGame game;
     init_game(&game);
     
-    // Create socket
+    // Cria socket
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
         exit(EXIT_FAILURE);
     }
     
-    // Set socket options
+    //Definir opções de socket
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
         perror("setsockopt");
         exit(EXIT_FAILURE);
@@ -287,13 +287,13 @@ int main() {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
     
-    // Bind socket
+    // Vincula socket
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
     
-    // Listen for connections
+   // Escuta conexões
     if (listen(server_fd, MAX_CLIENTS) < 0) {
         perror("listen");
         exit(EXIT_FAILURE);
@@ -301,7 +301,7 @@ int main() {
     
     printf("Server listening on port %d...\n", PORT);
     
-    // Accept incoming connections
+    // Aceitar conexões de entrada
     while ((client_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) > 0) {
         printf("New client connected\n");
         handle_client(client_socket, &game);
