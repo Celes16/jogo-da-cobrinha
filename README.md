@@ -14,9 +14,12 @@ A proposta é **explorar a vocação de cada linguagem**:
 ---
 
 ## 📂 Estrutura do Repositório
-├── back.c # Servidor/lógica do jogo (C)
+├── backend
 
-├── front.py # Cliente/interface gráfica (Python)
+    ├──back.c # Servidor/lógica do jogo (C)
+├── frontend
+    
+    ├── front.py # Cliente/interface gráfica (Python)
 
 ├── Makefile # Automação de compilação e execução
 
