@@ -1,4 +1,4 @@
-# jogo-da-cobrinha — Backend em C e Frontend em Python
+# jogo-da-cobra — Backend em C e Frontend em Python
 
 ## Descrição do Projeto
 
