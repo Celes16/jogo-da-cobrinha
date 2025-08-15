@@ -1,44 +1,87 @@
-# ============================================================================
-# Alvos para gerar executáveis do backend (C) e frontend (Python) no Linux e Windows
-# ============================================================================
+# Makefile para Jogo da Cobrinha Multiplataforma
 
-# --- Backend em C ---
+# ======================
+#  CONFIGURAÇÕES PRINCIPAIS
+# ======================
+BACKEND_SRC = back.c
+FRONTEND_SRC = front.py
 
-# Compilar backend no Linux
-exe-linux: check-gcc $(BIN_DIR)
-	@echo "[BUILD] Compilando backend para Linux..."
-	$(CC) $(CFLAGS_COMMON) $(CFLAGS_REL) $(BACK_SRC) -o $(BIN_DIR)/back
-	@echo "[OK] Executável gerado em $(BIN_DIR)/back"
+# Nomes dos executáveis
+BACKEND_LINUX = back
+FRONTEND_LINUX = front
+BACKEND_WIN = back.exe
+FRONTEND_WIN = front.exe
 
-# Compilar backend no Windows (usando MinGW no Linux)
-exe-win: check-gcc $(BIN_DIR)
-	@echo "[BUILD] Compilando backend para Windows (cross-compilation)..."
-	@command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1 || { echo "[ERRO] Instale o MinGW cross-compiler: sudo apt install mingw-w64"; exit 1; }
-	x86_64-w64-mingw32-gcc $(BACK_SRC) -o $(BIN_DIR)/back.exe
-	@echo "[OK] Executável gerado em $(BIN_DIR)/back.exe"
+# ======================
+#  LINUX
+# ======================
 
-# --- Frontend em Python ---
+# Instalar dependências no Linux
+install-deps:
+	@echo "Instalando dependências..."
+	sudo apt update && sudo apt install -y build-essential python3 python3-pip
+	pip install pyinstaller pygame
 
-# Gera executável standalone do frontend no Linux
-front-linux:
-	@echo "[BUILD] Gerando executável Python para Linux..."
-	@command -v pyinstaller >/dev/null 2>&1 || { echo "[ERRO] Instale o PyInstaller: pip install pyinstaller"; exit 1; }
-	pyinstaller --onefile --noconsole $(FRONT_SRC)
-	@mkdir -p $(BIN_DIR) && cp dist/$(basename $(FRONT_SRC) .py) $(BIN_DIR)/
-	@echo "[OK] Executável do frontend gerado em $(BIN_DIR)/$(basename $(FRONT_SRC) .py)"
+# Compilar backend para Linux
+build-backend-linux:
+	@echo "Compilando backend para Linux..."
+	gcc $(BACKEND_SRC) -o $(BACKEND_LINUX) -lpthread
+	chmod +x $(BACKEND_LINUX)
 
-# Gera executável standalone do frontend no Windows
-front-win:
-	@echo "[BUILD] Gerando executável Python para Windows..."
-	@command -v pyinstaller >/dev/null 2>&1 || { echo "[ERRO] Instale o PyInstaller: pip install pyinstaller"; exit 1; }
-	pyinstaller --onefile --noconsole $(FRONT_SRC)
-	@mkdir -p $(BIN_DIR) && cp dist/$(basename $(FRONT_SRC) .py).exe $(BIN_DIR)/
-	@echo "[OK] Executável do frontend gerado em $(BIN_DIR)/$(basename $(FRONT_SRC) .py).exe"
+# Criar executável frontend para Linux
+build-frontend-linux:
+	@echo "Criando executável frontend para Linux..."
+	pyinstaller --onefile --noconsole $(FRONTEND_SRC) --name $(FRONTEND_LINUX)
+	chmod +x dist/$(FRONTEND_LINUX)
 
-# --- Atalhos ---
+# Compilar tudo para Linux
+build-linux: build-backend-linux build-frontend-linux
 
-# Gera todos executáveis para Linux
-exe-all-linux: exe-linux front-linux
+# Executar servidor
+run-server:
+	./$(BACKEND_LINUX)
 
-# Gera todos executáveis para Windows
-exe-all-win: exe-win front-win
+# Executar cliente
+run-client:
+	./dist/$(FRONTEND_LINUX)
+
+# ======================
+#  WINDOWS
+# ======================
+
+# Compilar backend para Windows
+build-backend-win:
+	@echo "Compilando backend para Windows..."
+	x86_64-w64-mingw32-gcc $(BACKEND_SRC) -o $(BACKEND_WIN) -lws2_32
+
+# Criar executável frontend para Windows
+build-frontend-win:
+	@echo "Criando executável frontend para Windows..."
+	wine pyinstaller --onefile --noconsole $(FRONTEND_SRC) --name $(FRONTEND_WIN)
+
+# Compilar tudo para Windows
+build-win: build-backend-win build-frontend-win
+
+# ======================
+#  UTILITÁRIOS
+# ======================
+
+# Executar jogo completo (Linux)
+run-game:
+	@echo "Iniciando servidor..."
+	@./$(BACKEND_LINUX) & SERVER_PID=$$!; \
+	sleep 1; \
+	echo "Iniciando cliente..."; \
+	./dist/$(FRONTEND_LINUX); \
+	kill $$SERVER_PID
+
+# Limpar arquivos gerados
+clean:
+	@echo "Limpando arquivos..."
+	rm -f $(BACKEND_LINUX) $(BACKEND_WIN)
+	rm -rf __pycache__ build dist *.spec
+
+.PHONY: all run install-deps \
+        build-backend-linux build-frontend-linux build-linux \
+        build-backend-win build-frontend-win build-win \
+        run-server run-client run-game clean
